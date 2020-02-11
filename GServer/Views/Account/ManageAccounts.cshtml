@@ -29,7 +29,8 @@
                         @using (Html.BeginForm("DeleteUserAdmin", "Account", new { userName = usr.UserName }, FormMethod.Post, true, new { id = "deleteForm", @class = "form-horizontal" }))
                         {
                             @Html.ActionLink("Edit", "ManageUserAdmin", new { userName = usr.UserName }, new { @class = "btn btn-primary btn-sm" }) <text> | </text>
-                            <input type="submit" value="Delete Account" class="btn btn-danger btn-sm" />
+                            <input type="submit" value="Delete Account" class="btn btn-danger btn-sm" 
+                                   onclick="return confirm('Are you sure you want to delete user: @usr.UserName?')"/>
                         }
                     </td>
                 </tr>
