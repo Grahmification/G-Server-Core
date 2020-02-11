@@ -44,7 +44,11 @@ namespace GServer
             // Adds scoped classes for things like UserManager, SignInManager, PasswordHashers etc..
             // NOTE: Automatically adds the validated user from a cookie to the HttpContext.User
             // https://github.com/aspnet/Identity/blob/85f8a49aef68bf9763cd9854ce1dd4a26a7c5d3c/src/Identity/IdentityServiceCollectionExtensions.cs
-            services.AddIdentity<ApplicationUser, IdentityRole>()
+            services.AddIdentity<ApplicationUser, IdentityRole>(options =>
+            {
+                options.Lockout.MaxFailedAccessAttempts = 5; //set lockout options
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15); //set lockout options
+            })
 
                 // Adds UserStore and RoleStore from this context
                 // That are consumed by the UserManager and RoleManager

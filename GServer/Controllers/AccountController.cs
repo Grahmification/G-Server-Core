@@ -58,8 +58,10 @@ namespace GServer.Controllers
                     
                     if (result.Succeeded)
                         return RedirectToLocal(returnUrl); //success
+                    else if(result.IsLockedOut)
+                        ModelState.AddModelError("", "Your account is temporarily locked. Please try again later.");
                     else
-                        ModelState.AddModelError("", "Problem loggin in.");
+                        ModelState.AddModelError("", "Invalid login attempt.");
                 }
                 else
                 {
@@ -280,12 +282,14 @@ namespace GServer.Controllers
   
 
         //----------------------------------- Helpers -----------------------------------
+        
+            //need to turn lockout on here
         private async Task<Microsoft.AspNetCore.Identity.SignInResult> SignInAsync(ApplicationUser user, string passWord, bool isPersistent)
         {
             // Sign out any previous sessions
             await _SignInManager.SignOutAsync();
             // Sign user in with the valid credentials
-            var result = await _SignInManager.PasswordSignInAsync(user.UserName, passWord, isPersistent, false);
+            var result = await _SignInManager.PasswordSignInAsync(user.UserName, passWord, isPersistent, true);
             return result;
         }
         private ActionResult RedirectToLocal(string returnUrl)
