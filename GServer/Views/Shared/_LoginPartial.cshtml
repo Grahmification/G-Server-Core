@@ -1,0 +1,33 @@
+﻿@if (User.Identity.IsAuthenticated)
+{
+    using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm", @class = "navbar-right" }))
+    {
+        @Html.AntiForgeryToken()
+
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                @User.Identity.Name
+            </a>
+            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                <a class="dropdown-item" href="javascript:document.getElementById('logoutForm').submit()">Log off</a>
+                <div class="dropdown-divider"></div>
+                @Html.ActionLink("Manage Account", "Manage", "Account", null, new { @class = "dropdown-item", title = "Manage" })
+
+                @if (User.IsInRole("Admin"))
+                {
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-header">Admin Control</a>
+                    @Html.ActionLink("Manage Accounts", "ManageAccounts", "Account", null, new { @class = "dropdown-item" })
+
+                }
+
+            </div>
+        </li>
+    }
+}
+else
+{
+    <li class="nav-item">
+        @Html.ActionLink("Log in", "Login", "Account", null, new { @class = "nav-link", id = "loginLink" })
+    </li>
+}

@@ -1,0 +1,144 @@
+﻿@using GServer.MusicDL;
+@using YoutubeExplode;
+
+<h3>Download Audio From Youtube</h3>
+@if (this.TaggedSong != null)
+{
+    <p style="line-height:0.7">Song: @this.TaggedSong.Name</p>
+    <p style="line-height:0.7">Artist: @this.TaggedSong.ArtistsNameString</p>
+    <p style="line-height:0.7">Album: @this.TaggedSong.Releases[this.TaggedSongReleaseIndex].Name</p>
+    <p style="line-height:0.7">Duration: @this.TaggedSong.Duration</p>
+}
+
+<button class="btn btn-primary" @onclick="@(async () => await onDLButtonClick(this.Link))">Download From Link</button>
+Download Link:
+<input type="text" placeholder="Link" @bind="Link" />
+<br />
+
+
+@if (this.TaggedSong == null)
+{
+    <p>Title:<input type="text" placeholder="Title" @bind="Title" /><br /></p>
+    <p>Artist: <input type="text" placeholder="Artist" @bind="Artist" /><br /></p>
+}
+else
+{
+    <button class="btn btn-primary" @onclick="@AutoSearch">Auto Search</button>
+}
+
+
+@if (Status != "")
+{
+    <p> Status: @Status </p>
+}
+
+
+@if (Link != "")
+{
+    <iframe width="420" height="315"
+            src=@YoutubeVideo.EmbedLink(Link)>
+    </iframe>
+}
+
+<div style="border-width:thick;border-style:hidden">
+    @if (SearchedVids?.Count > 0)
+    {
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Duration</th>
+                    <th>Video</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                @for (int i = 0; i < SearchedVids.Count; i++)
+                {
+                    var vid = SearchedVids[i];
+                    var local_index = i; //needed or else onclick won't grab the correct index
+                    <tr>
+                        <td>
+                            <p>@vid.Title</p>
+                            <button class="btn btn-primary" @onclick="@(() => onDLButtonClick(YoutubeVideo.LinkFromID(vid.Id)))">Download</button>
+
+                        </td>
+                        <td>@vid.Duration.ToString()</td>
+                        <td>
+                            <iframe width="150" height="150"
+                                    src=@YoutubeVideo.EmbedLink(YoutubeVideo.LinkFromID(vid.Id))>
+                            </iframe>
+                        </td>
+                    </tr>
+
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
+
+
+@code {
+    [Parameter]
+    public Song TaggedSong { get; set; } = null;
+    [Parameter]
+    public int TaggedSongReleaseIndex { get; set; }
+
+    private string Link { get; set; } = "";
+    private string Artist { get; set; } = "";
+    private string Title { get; set; } = "";
+
+    private string Status { get; set; } = "";
+
+    private IReadOnlyList<YoutubeExplode.Models.Video> SearchedVids { get; set; }
+
+
+
+    async Task onDLButtonClick(string link)
+    {
+        try
+        {
+            if (link == "")
+            {
+                Status = "No link specified";
+                return;
+            }
+
+            SearchedVids = null; //clear the videos
+            Status = "Downloading...";
+
+
+            var vid = await Task<YoutubeVideo>.Run(() => new YoutubeVideo(link));
+            var savePath = await Task<string>.Run(() => vid.DownloadAudioMP3(YoutubeVideo.DefaultDlFolder));
+            vid.TagMP3File(savePath);
+
+
+            if (TaggedSong != null)
+            {
+                TaggedSong.TagMP3File(savePath, TaggedSongReleaseIndex);
+            }
+
+            MusicTagging.Folderize(savePath, YoutubeVideo.DefaultDlFolder);
+
+            Status = "Download Complete";
+        }
+        catch (Exception ex)
+        {
+            Status = "Download error occurred: " + ex.ToString();
+        }
+    }
+
+    void AutoSearch()
+    {
+
+        string searchQuery = TaggedSong.ArtistsNameString + " - " + TaggedSong.Name; //search query for youtube
+
+        var client = new YoutubeClient();
+        var searchTask = client.SearchVideosAsync(searchQuery, 1);
+        searchTask.Wait();
+
+        SearchedVids = searchTask.Result;
+    }
+
+}

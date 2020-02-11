@@ -1,0 +1,38 @@
+﻿@using GServer.Models;
+@using Microsoft.AspNetCore.Identity;
+@{
+    ViewBag.Title = "Manage Account";
+}
+
+<h2>@ViewBag.Title.</h2>
+
+<p class="text-success">@ViewBag.StatusMessage</p>
+<div class="row">
+    <div class="col-md-12">
+        @if (ViewBag.HasLocalPassword)
+        {
+            <partial name="_ChangePasswordPartial" />
+        }
+        else
+        {
+            <partial name="_SetPasswordPartial" />
+        }
+
+        <h4>Delete Account</h4>
+        <hr />
+        @using (Html.BeginForm("Delete", "Account", FormMethod.Post, new { id = "deleteForm", @class = "form-horizontal" }))
+        {
+            <div class="form-group">
+                <div class="col-md-offset-2 col-md-5">
+                    <input type="submit" value="Delete Acount" class="btn btn-danger" />
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+
+
+@section Scripts {
+    <!--Scripts.Render("~/bundles/jqueryval")-->
+}

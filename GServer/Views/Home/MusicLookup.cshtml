@@ -1,0 +1,7 @@
+﻿
+@{
+    ViewData["Title"] = "MusicLookup";
+}
+
+<BlazorComponent>@(await Html.RenderComponentAsync<GServer.Components.MusicLookup>(RenderMode.ServerPrerendered))</BlazorComponent>
+<script src="~/_framework/blazor.server.js"></script>

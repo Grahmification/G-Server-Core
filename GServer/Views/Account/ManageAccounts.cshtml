@@ -1,0 +1,46 @@
+﻿@model GServer.Models.ManageAccountsViewModel
+
+@{
+    ViewBag.Title = "Manage All User Accounts";
+}
+
+<h2>@ViewBag.Title</h2>
+
+<p>
+    @Html.ActionLink("Create New", "Register", "Account", null, new { @class = "btn btn-success" })
+
+</p>
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th scope="col">Username</th>
+            <th scope="col">Options</th>
+            <th scope="col">Info</th>
+        </tr>
+    </thead>
+    <tbody>
+        @{
+            foreach (var usr in Model.Users)
+            {
+
+                <tr>
+                    <th scope="row">@usr.UserName</th>
+                    <td>
+                        @using (Html.BeginForm("DeleteUserAdmin", "Account", new { userName = usr.UserName }, FormMethod.Post, true, new { id = "deleteForm", @class = "form-horizontal" }))
+                        {
+                            @Html.ActionLink("Edit", "ManageUserAdmin", new { userName = usr.UserName }, new { @class = "btn btn-primary btn-sm" }) <text> | </text>
+                            <input type="submit" value="Delete Account" class="btn btn-danger btn-sm" />
+                        }
+                    </td>
+                </tr>
+
+
+            }
+        }
+    </tbody>
+</table>
+
+
+@section Scripts {
+    <!--Scripts.Render("~/bundles/jqueryval")-->
+}
