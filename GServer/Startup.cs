@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using GServer.Data;
 using Microsoft.AspNetCore.Builder;
@@ -36,9 +37,18 @@ namespace GServer
                 options.MinimumSameSitePolicy = SameSiteMode.None;
             });
 
-            // Add ApplicationDbContext to DI
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            // Add ApplicationDbContext to DI ---- needs to vary depending on OS
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                services.AddDbContext<ApplicationDbContext>(options =>
+                                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            }
+            else
+            {
+                services.AddDbContext<ApplicationDbContext>(options =>
+                                options.UseSqlServer(Configuration.GetConnectionString("LinuxConnection")));
+            }
+                              
             
             // AddIdentity adds cookie based authentication
             // Adds scoped classes for things like UserManager, SignInManager, PasswordHashers etc..

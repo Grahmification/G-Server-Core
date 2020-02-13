@@ -18,8 +18,8 @@
     "GServer": {
       "commandName": "Project",
       "launchBrowser": true,
-      "applicationUrl": "https://localhost:5001;http://localhost:5000", //need this line for testing
-      //"applicationUrl": "http://::5000;", //allow server to listen on port 5000 for any ip address, not just localhost
+      //"applicationUrl": "https://localhost:5001;http://localhost:5000", //need this line for testing
+      "applicationUrl": "http://::5000;", //allow server to listen on port 5000 for any ip address, not just localhost
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"
       }
