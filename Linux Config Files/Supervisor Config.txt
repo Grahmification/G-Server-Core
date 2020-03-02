@@ -1,0 +1,21 @@
+
+"""""""""""" Create file with text below /etc/supervisor/conf.d/GServer.conf """""""""""""""""
+
+[program:GServer]
+
+command=/usr/bin/dotnet /home/grahmification_nonadmin/Documents/GServer/bin/Debug/netcoreapp3.0/GServer.dll
+
+directory=/home/grahmification_nonadmin/Documents/GServer/bin/Debug/netcoreapp3.0/
+
+autostart=true
+
+autorestart=true
+
+stderr_logfile=/var/log/GServer.err.log
+stdout_logfile=/var/log/GServer.out.log
+
+environment=ASPNETCORE__ENVIRONMENT=Production
+
+user=www-data
+
+stopsignal=INT

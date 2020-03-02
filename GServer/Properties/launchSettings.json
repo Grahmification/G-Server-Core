@@ -15,13 +15,20 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "GServer": {
+    "GServer": { //use for linux config
       "commandName": "Project",
-      "launchBrowser": true,
-      //"applicationUrl": "https://localhost:5001;http://localhost:5000", //need this line for testing
+      "launchBrowser": false,
       "applicationUrl": "http://::5000;", //allow server to listen on port 5000 for any ip address, not just localhost
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Production"
+      }
+    },
+    "GServer_Testing": { //use for windows config
+      "commandName": "Project",
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:5001;http://localhost:5000", //need this line for testing
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
       }
     }
   }
