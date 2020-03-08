@@ -1,0 +1,4 @@
+sudo service nginx stop
+sudo service supervisor stop
+sudo service supervisor start
+sudo service nginx start

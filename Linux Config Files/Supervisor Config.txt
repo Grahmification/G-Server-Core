@@ -3,10 +3,9 @@
 
 [program:GServer]
 
-command=/usr/bin/dotnet /home/grahmification_nonadmin/Documents/GServer/bin/Debug/netcoreapp3.0/GServer.dll
+command=/usr/bin/dotnet /opt/gserver/netcoreapp3.0/GServer.dll
 
-directory=/home/grahmification_nonadmin/Documents/GServer/bin/Debug/netcoreapp3.0/
-
+directory=/opt/gserver/netcoreapp3.0/
 autostart=true
 
 autorestart=true

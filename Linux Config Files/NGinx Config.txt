@@ -9,7 +9,7 @@
 
 server {
     
-listen 7000; # update as needed
+listen 8081; # update as needed
     
 server_name   example.com *.example.com;
     
