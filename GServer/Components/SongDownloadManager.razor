@@ -1,0 +1,75 @@
+﻿@using GServer.MusicDL;
+@using YoutubeExplode;
+
+@inject SongDownloadManagerClass DLManager;
+@implements IDisposable;
+<!---needed to prevent memory leaks as class subscribes to event, won't get removed otherwise-->
+
+<h3>Downloads</h3>
+
+<!--Search Table-->
+<div style="border-width:thick;border-style:hidden">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Video</th>
+                <th>Title</th>
+                <th>Artist</th>
+                <th>Album</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int i = 0; i < DLManager.downloads.Count; i++)
+            {
+                var download = DLManager.downloads[DLManager.downloads.Count-i-1]; //count in reverse
+                var local_index = DLManager.downloads.Count-i-1; //needed or else onclick won't grab the correct index
+
+                <tr>
+                    <td><a href="@download.Video.Link">@download.Video.Video.Title</a></td>
+                    <td>@download.TaggedSong?.Name</td>
+                    <td>@download.TaggedSong?.ArtistsNameString</td>
+                    <td>@download.TaggedSongAlbum?.Name</td>
+                    <td>@download.Status</td>        
+                    <td width="25">
+                        @if (download.Status == YoutubeVideoDL.DownloadStates.Downloading)
+                        {
+                            <button class="btn btn-outline-danger" @onclick="@(() => cancelDownload(local_index))">Cancel</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-primary" @onclick="@(() => removeDownload(local_index))">Remove</button>
+                        }
+                    </td>
+                </tr>
+
+            }
+        </tbody>
+    </table>
+</div>
+
+
+@code {
+
+    void cancelDownload(int index)
+    {
+
+    }
+
+    void removeDownload(int index)
+    {
+        DLManager.RemoveDownload(index);
+    }
+
+
+    protected override void OnInitialized()
+    {
+        DLManager.OnChange += StateHasChanged;
+    } //needed for download manager updates to propagate upwards
+
+    public void Dispose()
+    {
+        DLManager.OnChange -= StateHasChanged;
+    } //needed for download manager events to delete safely (no memory leak)
+}

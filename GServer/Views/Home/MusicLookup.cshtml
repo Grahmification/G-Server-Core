@@ -3,5 +3,19 @@
     ViewData["Title"] = "MusicLookup";
 }
 
-<BlazorComponent>@(await Html.RenderComponentAsync<GServer.Components.MusicLookup>(RenderMode.ServerPrerendered))</BlazorComponent>
+<ul class="nav nav-tabs">
+    <li class="nav-item active"><a class="nav-link active" data-toggle="tab" href="#search">Search</a></li>
+    <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#downloads">Downloads</a></li>
+</ul>
+
+<div class="tab-content">
+    <div id="search" class="tab-pane fade show active">
+        <BlazorComponent>@(await Html.RenderComponentAsync<GServer.Components.MusicLookup>(RenderMode.ServerPrerendered))</BlazorComponent>
+    </div>
+    <div id="downloads" class="tab-pane fade">
+        <BlazorComponent>@(await Html.RenderComponentAsync<GServer.Components.SongDownloadManager>(RenderMode.ServerPrerendered))</BlazorComponent>
+    </div>
+</div>
+
 <script src="~/_framework/blazor.server.js"></script>
+

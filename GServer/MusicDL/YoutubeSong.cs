@@ -26,25 +26,34 @@ namespace GServer.MusicDL
                     return YoutubeVideo.defaultDlFolder_Linux; //set Linux directory
             }
         }
-        public MediaStreamInfoSet StreamInfoSet { get; private set; }
+        public MediaStreamInfoSet StreamInfoSet { get; private set; } = null;
         public Video Video { get; private set; }
 
+        public string Link { get; private set; } = "";
+
+        private string videoID = "";
 
         public YoutubeVideo(string Link)
         {
-            string videoID = YoutubeClient.ParseVideoId(Link);
+            this.Link = Link;
+            videoID = YoutubeClient.ParseVideoId(Link);
             var client = new YoutubeClient();
-
-            // Get metadata for all streams in this video
-            this.StreamInfoSet = client.GetVideoMediaStreamInfosAsync(videoID).Result;
-
-            // Get tite of video, etc
+            
+            // Get metadata for all streams in this video - now done at download time
+            //this.StreamInfoSet = client.GetVideoMediaStreamInfosAsync(videoID).Result;
+            
+            // Get title of video, etc
             var videoTask = client.GetVideoAsync(videoID);
             videoTask.Wait();
             this.Video = videoTask.Result;
         }
         public async Task<string> DownloadAudioNative(string folderPath, string fileName = "")
         {
+            var client = new YoutubeClient();
+
+            if (StreamInfoSet == null)               
+                StreamInfoSet = await client.GetVideoMediaStreamInfosAsync(videoID); // Get metadata for all streams in this video
+           
             // Select one of the streams, e.g. highest quality muxed stream
             var streamInfo = this.StreamInfoSet.Audio.WithHighestBitrate();
 
@@ -61,15 +70,22 @@ namespace GServer.MusicDL
             filePath = MusicTagging.UpdateFileNameForDuplicates(filePath); //add "copy" to filename if file exists
 
             var fs = File.Create(filePath);
-            var client = new YoutubeClient();
             await client.DownloadMediaStreamAsync(streamInfo, fs); //wait for the download to finish
 
             fs.Close();
 
             return filePath;
         }
-        public string DownloadAudioMP3(string folderPath, string fileName = "")
+        public async Task<string> DownloadAudioMP3(string folderPath, string fileName = "")
         {
+            if(StreamInfoSet == null)
+            {
+                var client = new YoutubeClient();           
+                StreamInfoSet = await client.GetVideoMediaStreamInfosAsync(videoID); // Get metadata for all streams in this video
+            }
+
+            
+            
             if (fileName == "")
                 fileName = this.Video.Title; //set filename to the video title if not specified
 
@@ -121,4 +137,125 @@ namespace GServer.MusicDL
             return "https://www.youtube.com/watch?v=" + ID;
         }
     }
+
+
+    public class YoutubeVideoDL
+    {
+        public DownloadStates Status { get; private set; } = DownloadStates.Idle;
+        public string StatusString
+        {
+            get
+            {
+                switch (Status)
+                {
+                    case DownloadStates.DownloadComplete:
+                        return "Download Complete";
+
+                    case DownloadStates.Downloading:
+                        return "Downloading...";
+
+                    case DownloadStates.DownloadStopped:
+                        return "Stopped";
+
+                    case DownloadStates.Error:
+                        return "Download Error";
+
+                    case DownloadStates.Idle:
+                        return "Awaiting Download";
+
+                    default:
+                        return "Download Error";
+                }
+            }
+        } //user friendly strings for each state
+        public string ErrorText { get; private set; } = "";
+        public YoutubeVideo Video { get; private set; } = null;
+        public Song TaggedSong { get; private set; } = null;
+        public Release TaggedSongAlbum
+        {
+            get { return TaggedSong.Releases[_taggedSongReleaseIndex];  }
+        }
+        public DateTime StartTime { get; private set; } = new DateTime();
+
+
+        public event Action OnChange;
+
+        private int _taggedSongReleaseIndex = -1; 
+        
+        public YoutubeVideoDL(string link, Song taggedSong = null, int taggedSongReleaseIndex = -1)
+        {
+            TaggedSong = taggedSong;
+            _taggedSongReleaseIndex = taggedSongReleaseIndex;
+
+            if (link == "")
+            {
+                this.Status = DownloadStates.Error;
+                this.ErrorText = "No Link Specified";
+                return;
+            }
+      
+            Video = new YoutubeVideo(link);
+        }
+        public async Task Download()
+        {
+            try
+            {
+                StartTime = DateTime.Now;
+                Status = DownloadStates.Downloading;
+                OnChange?.Invoke();
+
+                var savePath = await Video.DownloadAudioMP3(YoutubeVideo.DefaultDlFolder);
+                Video.TagMP3File(savePath);
+                
+                if (TaggedSong != null)
+                    TaggedSong.TagMP3File(savePath, _taggedSongReleaseIndex);
+
+                MusicTagging.Folderize(savePath, YoutubeVideo.DefaultDlFolder);
+
+                this.Status = DownloadStates.DownloadComplete;
+            }
+            catch (Exception ex)
+            {
+                Status = DownloadStates.Error;
+                ErrorText = ex.ToString();
+            }
+            finally
+            {
+                OnChange?.Invoke(); //raise event that status has changed
+            }
+        }
+
+        public enum DownloadStates
+        {
+            Idle, Downloading, DownloadComplete, Error, DownloadStopped
+        }
+    }
+
+    public class SongDownloadManagerClass
+    {
+        public IList<YoutubeVideoDL> downloads { get; private set; } = new List<YoutubeVideoDL>();
+
+        public event Action OnChange;
+
+        public void AddDownload(YoutubeVideoDL download)
+        {
+            downloads.Add(download);
+            NotifyStateChanged(); //not really needed since status changes of download
+
+            download.OnChange += NotifyStateChanged;
+            download.Download();
+        }
+        public void RemoveDownload(int index)
+        {
+            var dl = downloads[index];
+            downloads.RemoveAt(index);
+
+            dl.OnChange -= NotifyStateChanged;
+            NotifyStateChanged();
+        }
+
+        private void NotifyStateChanged() => OnChange?.Invoke();
+
+    }
+
 }

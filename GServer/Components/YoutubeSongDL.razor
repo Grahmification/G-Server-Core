@@ -1,6 +1,9 @@
 ﻿@using GServer.MusicDL;
 @using YoutubeExplode;
 
+@inject SongDownloadManagerClass DLManager;
+
+
 <h3>Download Audio From Youtube</h3>
 @if (this.TaggedSong != null)
 {
@@ -25,7 +28,6 @@ else
 {
     <button class="btn btn-primary" @onclick="@AutoSearch">Auto Search</button>
 }
-
 
 @if (Status != "")
 {
@@ -60,7 +62,7 @@ else
                     <tr>
                         <td>
                             <p>@vid.Title</p>
-                            <button class="btn btn-primary" @onclick="@(() => onDLButtonClick(YoutubeVideo.LinkFromID(vid.Id)))">Download</button>
+                            <button class="btn btn-primary" @onclick="@(async () => await onDLButtonClick(YoutubeVideo.LinkFromID(vid.Id)))">Download</button>
 
                         </td>
                         <td>@vid.Duration.ToString()</td>
@@ -79,6 +81,10 @@ else
 
 
 
+
+
+
+
 @code {
     [Parameter]
     public Song TaggedSong { get; set; } = null;
@@ -93,41 +99,7 @@ else
 
     private IReadOnlyList<YoutubeExplode.Models.Video> SearchedVids { get; set; }
 
-
-
-    async Task onDLButtonClick(string link)
-    {
-        try
-        {
-            if (link == "")
-            {
-                Status = "No link specified";
-                return;
-            }
-
-            SearchedVids = null; //clear the videos
-            Status = "Downloading...";
-
-
-            var vid = await Task<YoutubeVideo>.Run(() => new YoutubeVideo(link));
-            var savePath = await Task<string>.Run(() => vid.DownloadAudioMP3(YoutubeVideo.DefaultDlFolder));
-            vid.TagMP3File(savePath);
-
-
-            if (TaggedSong != null)
-            {
-                TaggedSong.TagMP3File(savePath, TaggedSongReleaseIndex);
-            }
-
-            MusicTagging.Folderize(savePath, YoutubeVideo.DefaultDlFolder);
-
-            Status = "Download Complete";
-        }
-        catch (Exception ex)
-        {
-            Status = "Download error occurred: " + ex.ToString();
-        }
-    }
+    
 
     void AutoSearch()
     {
@@ -139,6 +111,50 @@ else
         searchTask.Wait();
 
         SearchedVids = searchTask.Result;
+    }
+
+    private async Task onDLButtonClick(string link)
+    {
+        try
+        {
+            if (link == "")
+            {
+                Status = "No link specified";
+                return;
+            }
+            
+            DLManager.AddDownload(new YoutubeVideoDL(link, TaggedSong, TaggedSongReleaseIndex));
+        }
+        catch (Exception ex)
+        {
+            Status = "Download Error: " + ex.ToString();
+        }
+    }
+
+    private async Task onDLButtonClick_old(string link)
+    {
+        try
+        {
+            if (link == "")
+            {
+                Status = "No link specified";
+                return;
+            }
+
+            SearchedVids = null; //clear the videos
+
+            Status = "Downloading...";
+
+            var DownloadSong = new YoutubeVideoDL(link, TaggedSong, TaggedSongReleaseIndex);
+            await DownloadSong.Download();
+
+            Status = "Download complete";
+
+        }
+        catch (Exception ex)
+        {
+            Status = "Download error occurred: " + ex.ToString();
+        }
     }
 
 }

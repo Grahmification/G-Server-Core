@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -28,7 +28,7 @@ namespace GServer.MusicDL
 
             //----- Get youtube video audio stream -----------------
             IStream audioStream = new WebStream(new Uri(audioLink), audioFormat, audioDuration);
-
+            
             //--- do the conversion ----------------
             convertAudio(audioStream, outputFilePath);
 

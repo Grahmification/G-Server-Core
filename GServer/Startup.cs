@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using GServer.MusicDL;
 
 namespace GServer
 {
@@ -48,7 +49,7 @@ namespace GServer
                 services.AddDbContext<ApplicationDbContext>(options =>
                                 options.UseSqlServer(Configuration.GetConnectionString("LinuxConnection")));
             }
-                              
+
             
             // AddIdentity adds cookie based authentication
             // Adds scoped classes for things like UserManager, SignInManager, PasswordHashers etc..
@@ -94,6 +95,9 @@ namespace GServer
          
             services.AddControllersWithViews(); //standard MVC config
             services.AddServerSideBlazor(); //add Blazor Support           
+
+
+            services.AddSingleton<SongDownloadManagerClass>(); //add download manager to DI so it can be referenced between multiple blazor components
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
