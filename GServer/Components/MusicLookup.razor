@@ -4,8 +4,16 @@
 <h3>Music Lookup</h3>
 
 <div style="border-width:thick;border-bottom-style:double">
-    <button class="btn btn-primary" @onclick="@onSearchButtonPress">Search</button>
+    <button class="btn btn-primary" @onclick="@(async () => await onSearchButtonPress())">
+        Search
+        @if (loading)
+        {
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        }
+    </button>
     <input placeholder="Song Title" @bind="SearchQuery" />
+
+
     <div>
         Filter Artists:
         <input placeholder="Artist Name" @bind-value="ArtistFilter" @bind-value:event="oninput" />
@@ -35,7 +43,7 @@
                     {
                         DisplayedSongs += 1; //a song has passed the filter criteria, display it
 
-                        <tr @onclick="@(() => SetFilter(local_index))">
+                        <tr @onclick="@(async () => await SetFilter(local_index))">
                             <td>@song.Name</td>
                             <td>@song.ArtistsNameString</td>
                             <td>
@@ -48,7 +56,7 @@
 
                                             <tr>
                                                 <td>@release.Name</td>
-                                                <td width="25"><button class="btn btn-outline-success" @onclick="@(() => SetTag(local_index, localJ))">Tag</button></td>
+                                                <td width="25"><button class="btn btn-outline-success" @onclick="@(async () => await SetTag(local_index, localJ))">Tag</button></td>
                                             </tr>
                                         }
                                     </tbody>
@@ -62,7 +70,13 @@
         @if (songs.Count > 0)
         {
             <div style="text-align:Center">Displaying: @DisplayedSongs of @songs.Count loaded songs.</div>
-            <button class="btn btn-primary" @onclick="@LoadMore">More Results</button>
+            <button class="btn btn-primary" @onclick="@(async () => await LoadMore())">
+                More Results
+                @if (loading)
+                {
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                }
+            </button>
         }
     }
     else
@@ -86,23 +100,34 @@
                 {
                     var release = songs[FilteredIndex].Releases[i];
                     var local_index = i; //needed or else onclick won't grab the correct index
-                    release.GetCoverArt();
+                    //release.GetCoverArt();
 
-                    <tr>
-                        <td>@release.Name</td>
-                        <td>@release.Date</td>
-                        <td>@release.Country</td>
-                        <td>@release.TrackCount</td>
-                        @if (release.CoverArtLink != "")
-                        {
-                            <td><img src="@release.CoverArtLink" class="img-fluid" alt="Responsive image" width="100"></td>
-                        }
-                        else
-                        {
-                            <td></td>
-                        }
-                        <td width="25"><button class="btn btn-outline-success" @onclick="@(() => SetTag(FilteredIndex, local_index))">Tag</button></td>
-                    </tr>
+                <tr>
+                    <td>@release.Name</td>
+                    <td>@release.Date</td>
+                    <td>@release.Country</td>
+                    <td>@release.TrackCount</td>
+                    @if (release.CoverArtLink == Release.CoverArtLinkNotFound)
+                    {
+                        <td></td>
+
+                    }
+                    else if (release.CoverArtLink == Release.CoverArtLinkDefault)
+                    {
+                        <td>
+                            <div class="spinner-border" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        </td>
+                    }
+                    else
+                    {
+                        <td>
+                            <img src="@release.CoverArtLink" class="img-fluid" alt="Responsive image" width="100">
+                        </td>
+                    }
+                    <td width="25"><button class="btn btn-outline-success" @onclick="@(async () => await SetTag(FilteredIndex, local_index))">Tag</button></td>
+                </tr>
                 }
             </tbody>
         </table>
@@ -130,39 +155,77 @@
     public int FilteredIndex { get; set; } = -1;
     public int TagIndex { get; set; } = -1;
     public int TagReleaseIndex { get; set; } = -1;
+    public bool loading = false;
 
-    public void onSearchButtonPress()
+    public async Task onSearchButtonPress()
     {
+        loading = true;
         SearchPage = 0;
-        songs.Clear();
-        search(this.SearchQuery, this.SearchPage);
+        CancelTag();
+
+        await Task.Run(() =>
+        {
+            songs.Clear();
+            songs = search(this.SearchQuery, this.SearchPage);
+        });
+
+        loading = false;
     }
 
-    public void SetFilter(int index)
+    public async Task SetFilter(int index)
     {
         this.FilteredIndex = index;
+
+        var Tasks = new List<Task>();
+
+        for (int i = 0; i < songs[FilteredIndex].Releases.Count; i++)
+        {
+            var release = songs[FilteredIndex].Releases[i];
+            Tasks.Add(Task.Run(() => release.GetCoverArt()));
+        }
+
+        await Task.WhenAll(Tasks.ToArray());
+
     }
     public void CancelFilter()
     {
         this.FilteredIndex = -1;
     }
 
-    public void SetTag(int songIndex, int releaseIndex)
+    public async Task SetTag(int songIndex, int releaseIndex)
     {
         this.TagIndex = songIndex;
         this.TagReleaseIndex = releaseIndex;
 
-        SetFilter(this.TagIndex);
+        await SetFilter(this.TagIndex);
+    }
+    public void CancelTag()
+    {
+        this.TagIndex = -1;
+        this.TagReleaseIndex = -1;
     }
 
-    public void LoadMore()
+
+    public async Task LoadMore()
     {
         SearchPage += 1;
-        search(this.SearchQuery, this.SearchPage);
+        loading = true;
+
+        await Task.Run(() =>
+        {
+            var tmpSongs = search(this.SearchQuery, this.SearchPage);
+
+            foreach (Song s in tmpSongs)
+                songs.Add(s);
+        });
+
+        loading = false;
     }
-    public void search(string query, int searchPage)
+    public List<Song> search(string query, int searchPage)
     {
         CancelFilter();
+
+        List<Song> tmpSongs = new List<Song>();
 
         if (query != "")
         {
@@ -176,10 +239,12 @@
 
                 foreach (XMLNodeG SongNode in BaseNodeG.GetChildren("recording"))
                 {
-                    songs.Add(new Song(SongNode));
+                    tmpSongs.Add(new Song(SongNode));
                 }
             }
         }
+
+        return tmpSongs;
     }
     public bool FilterSongByArtist(Song song, string ArtistFilter)
     {

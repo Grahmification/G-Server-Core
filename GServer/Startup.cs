@@ -96,8 +96,8 @@ namespace GServer
             services.AddControllersWithViews(); //standard MVC config
             services.AddServerSideBlazor(); //add Blazor Support           
 
-
-            services.AddSingleton<SongDownloadManagerClass>(); //add download manager to DI so it can be referenced between multiple blazor components
+            services.AddScoped<SongDownloadManagerClass>();  //add download manager to DI so it can be referenced between multiple blazor components
+            //services.AddSingleton<SongDownloadManagerClass>(); -- won't work, gives thread errors
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -31,7 +31,24 @@
                     <td>@download.TaggedSong?.Name</td>
                     <td>@download.TaggedSong?.ArtistsNameString</td>
                     <td>@download.TaggedSongAlbum?.Name</td>
-                    <td>@download.Status</td>        
+                    <td>
+
+                        @if (download.Status == YoutubeVideoDL.DownloadStates.Downloading)
+                        {
+                            <a>@download.StatusString</a>
+                            <div class="spinner-border" role="status">
+                                <span class="sr-only">Loading...</span>
+                            </div>
+                        }
+                        else if (download.Status == YoutubeVideoDL.DownloadStates.Error)
+                        {
+                            <button class="btn btn-outline-danger" onclick="return confirm(@download.ErrorText)">@download.StatusString</button>
+                        }
+                        else
+                        {
+                            <a>@download.StatusString</a>
+                        }
+                    </td>        
                     <td width="25">
                         @if (download.Status == YoutubeVideoDL.DownloadStates.Downloading)
                         {
