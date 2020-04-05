@@ -26,7 +26,7 @@ Download Link:
 }
 else
 {
-    <button class="btn btn-primary" @onclick="@AutoSearch">Auto Search</button>
+    <button class="btn btn-primary" @onclick="@(async () => await AutoSearch())">Auto Search</button>
 }
 
 @if (Status != "")
@@ -99,18 +99,14 @@ else
 
     private IReadOnlyList<YoutubeExplode.Models.Video> SearchedVids { get; set; }
 
-    
 
-    void AutoSearch()
+
+    private async Task AutoSearch()
     {
-
         string searchQuery = TaggedSong.ArtistsNameString + " - " + TaggedSong.Name; //search query for youtube
 
         var client = new YoutubeClient();
-        var searchTask = client.SearchVideosAsync(searchQuery, 1);
-        searchTask.Wait();
-
-        SearchedVids = searchTask.Result;
+        SearchedVids = await client.SearchVideosAsync(searchQuery, 1);
     }
 
     private async Task onDLButtonClick(string link)
@@ -122,38 +118,12 @@ else
                 Status = "No link specified";
                 return;
             }
-            
-            DLManager.AddDownload(new YoutubeVideoDL(link, TaggedSong, TaggedSongReleaseIndex));
+
+            await DLManager.AddDownload(new YoutubeVideoDL(link, TaggedSong, TaggedSongReleaseIndex));
         }
         catch (Exception ex)
         {
             Status = "Download Error: " + ex.ToString();
-        }
-    }
-
-    private async Task onDLButtonClick_old(string link)
-    {
-        try
-        {
-            if (link == "")
-            {
-                Status = "No link specified";
-                return;
-            }
-
-            SearchedVids = null; //clear the videos
-
-            Status = "Downloading...";
-
-            var DownloadSong = new YoutubeVideoDL(link, TaggedSong, TaggedSongReleaseIndex);
-            await DownloadSong.Download();
-
-            Status = "Download complete";
-
-        }
-        catch (Exception ex)
-        {
-            Status = "Download error occurred: " + ex.ToString();
         }
     }
 

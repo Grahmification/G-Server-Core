@@ -163,11 +163,8 @@
         SearchPage = 0;
         CancelTag();
 
-        await Task.Run(() =>
-        {
-            songs.Clear();
-            songs = search(this.SearchQuery, this.SearchPage);
-        });
+        songs.Clear();
+        songs = await search(this.SearchQuery, this.SearchPage);
 
         loading = false;
     }
@@ -211,17 +208,23 @@
         SearchPage += 1;
         loading = true;
 
+        var tmpSongs = await search(this.SearchQuery, this.SearchPage);
+
+        foreach (Song s in tmpSongs)
+            songs.Add(s);
+
+
         await Task.Run(() =>
         {
-            var tmpSongs = search(this.SearchQuery, this.SearchPage);
+            //var tmpSongs = await search(this.SearchQuery, this.SearchPage);
 
-            foreach (Song s in tmpSongs)
-                songs.Add(s);
+            //foreach (Song s in tmpSongs)
+            //songs.Add(s);
         });
 
         loading = false;
     }
-    public List<Song> search(string query, int searchPage)
+    public async Task<List<Song>> search(string query, int searchPage)
     {
         CancelFilter();
 
@@ -231,7 +234,7 @@
         {
             int numItems = 100; //number of items to retrive
 
-            var doc = MBServer.Search(MBEntityType.recording, query, numItems, numItems * searchPage);
+            var doc = await MBServer.Search(MBEntityType.recording, query, numItems, numItems * searchPage);
 
             foreach (XmlNode BaseNode in XMLFns.GetChildren(doc.DocumentElement, "recording-list"))
             {

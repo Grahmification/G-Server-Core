@@ -11,10 +11,10 @@ namespace GServer.MusicDL
 {
     public class MusicConverting
     {
-        public const string FFmpegLibraryPath_Windows = @"C:\Users\Graham\Desktop\ffmpeg-20191111-20c5f4d-win64-static\bin"; //windows location
+        public const string FFmpegLibraryPath_Windows = @"C:\Program Files\FFmpeg Binaries\bin"; //windows location
         public const string FFmpegLibraryPath_Linux = @"/usr/bin"; //linux location
 
-        public static string YoutubeAudioToMP3(string audioLink, string audioFormat, TimeSpan audioDuration, string filePath)
+        public static async Task<string> YoutubeAudioToMP3(string audioLink, string audioFormat, TimeSpan audioDuration, string filePath)
         {
             //Save file to the same location with changed extension
             string outputFilePath = Path.ChangeExtension(filePath, ".mp3");
@@ -30,7 +30,7 @@ namespace GServer.MusicDL
             IStream audioStream = new WebStream(new Uri(audioLink), audioFormat, audioDuration);
             
             //--- do the conversion ----------------
-            convertAudio(audioStream, outputFilePath);
+            await convertAudio(audioStream, outputFilePath);
 
             return outputFilePath;
         }
@@ -54,8 +54,7 @@ namespace GServer.MusicDL
             IStream audioStream = mediaInfo.AudioStreams.FirstOrDefault();
 
             //------------ do the conversion ----------------
-            convertAudio(audioStream, outputFilePath);
-
+            await convertAudio(audioStream, outputFilePath);
 
             if (deleteOriginal)
                 File.Delete(filePath); //delete the original file
@@ -63,7 +62,7 @@ namespace GServer.MusicDL
             return outputFilePath;
         }
 
-        private static void convertAudio(IStream audioStream, string outputFilePath)
+        private static async Task convertAudio(IStream audioStream, string outputFilePath)
         {
             var conv = new Conversion();
             conv.AddStream(audioStream);
@@ -73,8 +72,7 @@ namespace GServer.MusicDL
             //see here https://superuser.com/questions/892996/ffmpeg-is-doubling-audio-length-when-extracting-from-video/893044
             //128k seems to be typical youtube audio quality - won't increase file size
             conv.SetAudioBitrate("128k");
-            var convTask = conv.Start();
-            convTask.Wait(); //wait for conversion to finish; 
+            await conv.Start(); //wait for conversion to finish; 
         }
         private static void setFFMPEGPath()
         {

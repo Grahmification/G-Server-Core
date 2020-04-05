@@ -16,6 +16,7 @@
 	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	</PackageReference>
 	<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="3.0.0" />
+	<PackageReference Include="Microsoft.NETCore.App" Version="2.2.8" />
 	<PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.0.0" />
 	<PackageReference Include="taglib-sharp-netstandard2.0" Version="2.1.0" />
 	<PackageReference Include="Xabe.FFMpeg" Version="3.5.1" />

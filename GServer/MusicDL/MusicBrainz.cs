@@ -14,8 +14,9 @@ namespace GServer.MusicDL
     {
         private const string APIpath = @"https://musicbrainz.org/ws/2";
         private const string CoverArtPath = @"http://coverartarchive.org//release";
+        private const string UserAgentId = @"Gserver/1.0.0 ( kerr.graham.d@gmail.com )"; //server needs identification string in header to allow requests
 
-        public static XmlDocument Lookup(MBEntityType ent, string MBID, string[] inc = null)
+        public static async Task<XmlDocument> Lookup(MBEntityType ent, string MBID, string[] inc = null)
         {
             // url string =  serverpath /<ENTITY>/<MBID>?inc=<INC>
             string ext = $"/{EntityStrings(ent)}/{MBID}";
@@ -26,9 +27,9 @@ namespace GServer.MusicDL
             for (int i = 1; i < inc.Length; i++)
                 ext = ext + $"%20{inc[i]}"; //multiple inc commands can be added with spaces
 
-            return GetServerData(APIpath + ext);
+            return await GetServerData(APIpath + ext);
         }
-        public static XmlDocument Browse(MBEntityType ent, string MBID, int maxCount, int offset, string[] inc = null)
+        public static async Task<XmlDocument> Browse(MBEntityType ent, string MBID, int maxCount, int offset, string[] inc = null)
         {
             // url string =  serverpath /<ENTITY>?<ENTITY>=<MBID>&limit=<LIMIT>&offset=<OFFSET>&inc=<INC>
             string ext = $"/{EntityStrings(ent)}?{EntityStrings(ent)}={MBID}&limit={maxCount.ToString()}&offset={offset.ToString()}";
@@ -39,25 +40,25 @@ namespace GServer.MusicDL
             for (int i = 1; i < inc.Length; i++)
                 ext = ext + $"%20{inc[i]}"; //multiple inc commands can be added with spaces
 
-            return GetServerData(APIpath + ext);
+            return await GetServerData(APIpath + ext);
         }
-        public static XmlDocument Search(MBEntityType ent, string query, int maxCount, int offset)
+        public static async Task<XmlDocument> Search(MBEntityType ent, string query, int maxCount, int offset)
         {
             // url string =  serverpath /<ENTITY>?query=<QUERY>&limit=<LIMIT>&offset=<OFFSET>
             string ext = $"/{EntityStrings(ent)}?query={query}&limit={maxCount.ToString()}&offset={offset.ToString()}";
 
-            return GetServerData(APIpath + ext);
+            return await GetServerData(APIpath + ext);
         }
-        private static XmlDocument GetServerData(string url)
+        private static async Task<XmlDocument> GetServerData(string url)
         {
             url = url.Replace(" ", "_"); //url can't have any spaces, replace with underscores
 
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("User-Agent", @"Gserver/1.0.0 ( kerr.graham.d@gmail.com )");
+                client.DefaultRequestHeaders.Add("User-Agent", UserAgentId);
 
-                var response = client.GetStringAsync(new Uri(url)).Result;
-
+                var response = await client.GetStringAsync(new Uri(url));
+                
                 var output = new XmlDocument();
                 output.LoadXml(response);
 
@@ -66,20 +67,20 @@ namespace GServer.MusicDL
         }
 
 
-        public static String GetCoverArtDataFront(string MBID)
+        public static async Task<string> GetCoverArtDataFront(string MBID)
         {
             string url = $"{CoverArtPath}/{MBID}/front";
-            return GetCoverArtLink(url);
+            return await GetCoverArtLink(url);
         }
-        private static String GetCoverArtLink(string url)
+        private static async Task<string> GetCoverArtLink(string url)
         {
             url = url.Replace(" ", "%20"); //url can't have any spaces, replace with underscores
 
             using (var client = new HttpClient())
             {
-                client.DefaultRequestHeaders.Add("User-Agent", @"Gserver/1.0.0 ( kerr.graham.d@gmail.com )");
+                client.DefaultRequestHeaders.Add("User-Agent", UserAgentId);
 
-                var response = client.GetAsync(new Uri(url)).Result;
+                var response = await client.GetAsync(new Uri(url));
 
                 if (response.StatusCode.ToString() == "NotFound") //if image doesn't exist
                     return "";
@@ -87,10 +88,10 @@ namespace GServer.MusicDL
                 return response.RequestMessage.RequestUri.AbsoluteUri;
             }
         }
-        public static byte[] GetImage(string imageUrl)
+        public static async Task<byte[]> GetImage(string imageUrl)
         {
             WebClient client = new WebClient();
-            Stream stream = client.OpenRead(imageUrl);
+            Stream stream = await client.OpenReadTaskAsync(imageUrl);
             return ConvertStreamToByteArr(stream);
         }
         private static byte[] ConvertStreamToByteArr(Stream stream)
@@ -166,10 +167,10 @@ namespace GServer.MusicDL
                 this.SongTrackNum = releaseNode.GetChild("medium-list").GetChild("medium").GetChild("track-list").GetChild("track").GetChild("number").InnerText;
             }
         }
-        public void GetCoverArt()
+        public async Task GetCoverArt()
         {
             if (this.CoverArtLink == Release.CoverArtLinkDefault) //don't need to do it twice     
-                this.CoverArtLink = MBServer.GetCoverArtDataFront(this.MBID);
+                this.CoverArtLink = await MBServer.GetCoverArtDataFront(this.MBID);
         }
     }
     public class ReleaseGroup : MBEntity
@@ -201,10 +202,10 @@ namespace GServer.MusicDL
                 }
             }
         }
-        public void PopulateReleases()
+        public async Task PopulateReleases()
         {
             //search the database for this artist specifically
-            var doc = MBServer.Lookup(MBEntityType.releaseGroup, this.MBID, new string[] { "releases" });
+            var doc = await MBServer.Lookup(MBEntityType.releaseGroup, this.MBID, new string[] { "releases" });
 
             //create a new releaseGroupobject - the new function will grab the release list this time
             var releaseGroupNode = new XMLNodeG(XMLFns.GetChildren(doc.DocumentElement, "release-group").First());
@@ -256,10 +257,10 @@ namespace GServer.MusicDL
             }
 
         }
-        public void PopulateReleaseGroups()
+        public async Task PopulateReleaseGroups()
         {
             //search the database for this artist specifically
-            var doc = MBServer.Lookup(MBEntityType.artist, this.MBID, new string[] { "release-groups" });
+            var doc = await MBServer.Lookup(MBEntityType.artist, this.MBID, new string[] { "release-groups" });
 
             //create a new artist object - the new function will grab the release list this time
             var artistNode = new XMLNodeG(XMLFns.GetChildren(doc.DocumentElement, "artist").First());
@@ -350,7 +351,7 @@ namespace GServer.MusicDL
             }
         }
 
-        public void TagMP3File(string filePath, int releaseIndex)
+        public async Task TagMP3File(string filePath, int releaseIndex)
         {
             var tfile = TagLib.File.Create(filePath);
 
@@ -385,9 +386,9 @@ namespace GServer.MusicDL
                     tfile.Tag.TrackCount = uint.Parse(release.TrackCount);
 
                 //-------------------- get the album art -------------------
-                release.GetCoverArt(); //query the server for the link
+                await release.GetCoverArt(); //query the server for the link
                 if (release.CoverArtLink != Release.CoverArtLinkNotFound)
-                    MusicTagging.addPictureNoSave(tfile, MBServer.GetImage(release.CoverArtLink));
+                    MusicTagging.addPictureNoSave(tfile, await MBServer.GetImage(release.CoverArtLink));
             }
 
             tfile.Save();

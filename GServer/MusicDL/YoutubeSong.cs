@@ -97,11 +97,11 @@ namespace GServer.MusicDL
             if (this.StreamInfoSet.Audio.Count == 0) //sometimes the libary can't seem to find the audio
                 throw new Exception("Failed to locate audio in chosen video.");
 
-            var savePath = MusicConverting.YoutubeAudioToMP3(streamInfo.Url, streamInfo.AudioEncoding.ToString(), this.Video.Duration, filePath);
+            var savePath = await MusicConverting.YoutubeAudioToMP3(streamInfo.Url, streamInfo.AudioEncoding.ToString(), this.Video.Duration, filePath);
 
             return savePath;
         }
-        public void TagMP3File(string filePath)
+        public async Task TagMP3File(string filePath)
         {
             var tfile = TagLib.File.Create(filePath);
             string title = tfile.Tag.Title;
@@ -113,7 +113,7 @@ namespace GServer.MusicDL
             // add video thumbnail
             var thumbUrl = this.Video.Thumbnails.HighResUrl;
             if (thumbUrl != "" && thumbUrl != null)
-                MusicTagging.addPictureNoSave(tfile, MBServer.GetImage(thumbUrl));
+                MusicTagging.addPictureNoSave(tfile, await MBServer.GetImage(thumbUrl));
 
             tfile.Save();
         }
@@ -137,7 +137,6 @@ namespace GServer.MusicDL
             return "https://www.youtube.com/watch?v=" + ID;
         }
     }
-
 
     public class YoutubeVideoDL
     {
@@ -205,10 +204,10 @@ namespace GServer.MusicDL
                 OnChange?.Invoke();
 
                 var savePath = await Video.DownloadAudioMP3(YoutubeVideo.DefaultDlFolder);
-                Video.TagMP3File(savePath);
+                await Video.TagMP3File(savePath);
                 
                 if (TaggedSong != null)
-                    TaggedSong.TagMP3File(savePath, _taggedSongReleaseIndex);
+                   await TaggedSong.TagMP3File(savePath, _taggedSongReleaseIndex);
 
                 MusicTagging.Folderize(savePath, YoutubeVideo.DefaultDlFolder);
 
@@ -237,13 +236,13 @@ namespace GServer.MusicDL
 
         public event Action OnChange;
 
-        public void AddDownload(YoutubeVideoDL download)
+        public async Task AddDownload(YoutubeVideoDL download)
         {
             downloads.Add(download);
             NotifyStateChanged(); //not really needed since status changes of download
 
             download.OnChange += NotifyStateChanged;
-            download.Download();
+            await download.Download();
         }
         public void RemoveDownload(int index)
         {
