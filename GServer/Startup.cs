@@ -83,7 +83,7 @@ namespace GServer
                 // Make sure users have unique emails
                 options.User.RequireUniqueEmail = false;
             });
-
+           
             // Alter application cookie info
             services.ConfigureApplicationCookie(options =>
             {
@@ -94,10 +94,13 @@ namespace GServer
             });
          
             services.AddControllersWithViews(); //standard MVC config
-            services.AddServerSideBlazor(); //add Blazor Support           
+            services.AddServerSideBlazor(); //add Blazor Support     
 
-            services.AddScoped<SongDownloadManagerClass>();  //add download manager to DI so it can be referenced between multiple blazor components
-            //services.AddSingleton<SongDownloadManagerClass>(); -- won't work, gives thread errors
+            services.AddHttpContextAccessor(); //allows Blazor components to view user information
+
+            //add download manager to DI so it can be referenced between multiple blazor components
+            //services.AddScoped<SongDownloadManagerClass>();  //unusued, resets each time connection is reset
+            services.AddSingleton<SongDownloadManagerClass>(); 
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

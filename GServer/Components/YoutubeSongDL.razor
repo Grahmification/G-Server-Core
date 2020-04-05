@@ -1,8 +1,8 @@
 ﻿@using GServer.MusicDL;
 @using YoutubeExplode;
+@using Microsoft.AspNetCore.Http;
 
 @inject SongDownloadManagerClass DLManager;
-
 
 <h3>Download Audio From Youtube</h3>
 @if (this.TaggedSong != null)
@@ -99,6 +99,8 @@ else
 
     private IReadOnlyList<YoutubeExplode.Models.Video> SearchedVids { get; set; }
 
+    [Inject]
+    private IHttpContextAccessor _context { get; set; } = default!; //allows component to get current username
 
 
     private async Task AutoSearch()
@@ -119,7 +121,8 @@ else
                 return;
             }
 
-            await DLManager.AddDownload(new YoutubeVideoDL(link, TaggedSong, TaggedSongReleaseIndex));
+            var userName = _context.HttpContext.User.Identity.Name; //get current user name
+            await DLManager.AddDownload(new YoutubeVideoDL(userName, link, TaggedSong, TaggedSongReleaseIndex));
         }
         catch (Exception ex)
         {

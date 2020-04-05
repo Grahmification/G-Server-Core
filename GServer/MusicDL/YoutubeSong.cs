@@ -175,17 +175,18 @@ namespace GServer.MusicDL
             get { return TaggedSong.Releases[_taggedSongReleaseIndex];  }
         }
         public DateTime StartTime { get; private set; } = new DateTime();
-
+        public string UserName { get; private set; } = ""; //user who downloaded the song
 
         public event Action OnChange;
 
         private int _taggedSongReleaseIndex = -1; 
         
-        public YoutubeVideoDL(string link, Song taggedSong = null, int taggedSongReleaseIndex = -1)
+        public YoutubeVideoDL(string userName, string link, Song taggedSong = null, int taggedSongReleaseIndex = -1)
         {
+            UserName = userName;
             TaggedSong = taggedSong;
             _taggedSongReleaseIndex = taggedSongReleaseIndex;
-
+                    
             if (link == "")
             {
                 this.Status = DownloadStates.Error;
@@ -240,7 +241,7 @@ namespace GServer.MusicDL
         {
             downloads.Add(download);
             NotifyStateChanged(); //not really needed since status changes of download
-
+            
             download.OnChange += NotifyStateChanged;
             await download.Download();
         }

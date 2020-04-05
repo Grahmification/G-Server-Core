@@ -18,6 +18,7 @@
                 <th>Album</th>
                 <th>Status</th>
                 <th>Action</th>
+                <th>User</th>
             </tr>
         </thead>
         <tbody>
@@ -26,40 +27,41 @@
                 var download = DLManager.downloads[DLManager.downloads.Count-i-1]; //count in reverse
                 var local_index = DLManager.downloads.Count-i-1; //needed or else onclick won't grab the correct index
 
-                <tr>
-                    <td><a href="@download.Video.Link">@download.Video.Video.Title</a></td>
-                    <td>@download.TaggedSong?.Name</td>
-                    <td>@download.TaggedSong?.ArtistsNameString</td>
-                    <td>@download.TaggedSongAlbum?.Name</td>
-                    <td>
+            <tr>
+                <td><a href="@download.Video.Link">@download.Video.Video.Title</a></td>
+                <td>@download.TaggedSong?.Name</td>
+                <td>@download.TaggedSong?.ArtistsNameString</td>
+                <td>@download.TaggedSongAlbum?.Name</td>
+                <td>
 
-                        @if (download.Status == YoutubeVideoDL.DownloadStates.Downloading)
-                        {
-                            <a>@download.StatusString</a>
-                            <div class="spinner-border" role="status">
-                                <span class="sr-only">Loading...</span>
-                            </div>
-                        }
-                        else if (download.Status == YoutubeVideoDL.DownloadStates.Error)
-                        {
-                            <button class="btn btn-outline-danger" onclick="return confirm(@download.ErrorText)">@download.StatusString</button>
-                        }
-                        else
-                        {
-                            <a>@download.StatusString</a>
-                        }
-                    </td>        
-                    <td width="25">
-                        @if (download.Status == YoutubeVideoDL.DownloadStates.Downloading)
-                        {
-                            <button class="btn btn-outline-danger" @onclick="@(() => cancelDownload(local_index))">Cancel</button>
-                        }
-                        else
-                        {
-                            <button class="btn btn-primary" @onclick="@(() => removeDownload(local_index))">Remove</button>
-                        }
-                    </td>
-                </tr>
+                    @if (download.Status == YoutubeVideoDL.DownloadStates.Downloading)
+                    {
+                        <a>@download.StatusString</a>
+                        <div class="spinner-border" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    }
+                    else if (download.Status == YoutubeVideoDL.DownloadStates.Error)
+                    {
+                        <button class="btn btn-outline-danger" onclick="return confirm(@download.ErrorText)">@download.StatusString</button>
+                    }
+                    else
+                    {
+                        <a>@download.StatusString</a>
+                    }
+                </td>
+                <td width="25">
+                    @if (download.Status == YoutubeVideoDL.DownloadStates.Downloading)
+                    {
+                        <button class="btn btn-outline-danger" @onclick="@(() => cancelDownload(local_index))">Cancel</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary" @onclick="@(() => removeDownload(local_index))">Remove</button>
+                    }
+                </td>
+                <td>@download.UserName</td>
+            </tr>
 
             }
         </tbody>
@@ -82,11 +84,18 @@
 
     protected override void OnInitialized()
     {
-        DLManager.OnChange += StateHasChanged;
+        DLManager.OnChange += OnMyChangeHandler;
     } //needed for download manager updates to propagate upwards
 
     public void Dispose()
     {
-        DLManager.OnChange -= StateHasChanged;
+        DLManager.OnChange -= OnMyChangeHandler;
     } //needed for download manager events to delete safely (no memory leak)
+
+    private async void OnMyChangeHandler()
+    {
+        // InvokeAsync is inherited, it syncs the call back to the render thread
+        await InvokeAsync(() => StateHasChanged());
+    } //needed for multiple threads to call safely with singleton class (multiple users can be updating at same time)
+
 }
