@@ -1,5 +1,6 @@
 ﻿@using GServer.MusicDL;
 @using System.Xml;
+@using GServer.Components.Shared;
 
 <h3>Music Lookup</h3>
 
@@ -18,6 +19,20 @@
         Filter Artists:
         <input placeholder="Artist Name" @bind-value="ArtistFilter" @bind-value:event="oninput" />
     </div>
+
+    <Dropdown TItem="string">
+        <InitialTip>Filter Album Types</InitialTip>
+        <ChildContent>
+            <div style="padding-left: 5px;">
+                <input type="checkbox" @bind-value="@albumTypeFilters[Release.ReleaseTypes.Album]" checked /> Albums <br />
+                <input type="checkbox" @bind-value="@albumTypeFilters[Release.ReleaseTypes.Compilation]" /> Compilations <br />
+                <input type="checkbox" @bind-value="@albumTypeFilters[Release.ReleaseTypes.Single]" /> Singles <br />
+                <input type="checkbox" @bind-value="@albumTypeFilters[Release.ReleaseTypes.Live]" /> Live <br />
+                <input type="checkbox" @bind-value="@albumTypeFilters[Release.ReleaseTypes.Unknown]" checked /> Unknown <br />
+            </div>
+        </ChildContent>
+    </Dropdown>
+
 </div>
 
 <!--Search Table-->
@@ -41,28 +56,36 @@
                     var local_index = i; //needed or else onclick won't grab the correct index
                     if (FilterSongByArtist(song, ArtistFilter))
                     {
-                        DisplayedSongs += 1; //a song has passed the filter criteria, display it
+                        if (FilterSongByReleaseTypes(song, albumTypeFilters)) //don't show the whole song if all the release types are filtered
+                        {
 
-                        <tr @onclick="@(async () => await SetFilter(local_index))">
-                            <td>@song.Name</td>
-                            <td>@song.ArtistsNameString</td>
-                            <td>
-                                <table class="table table-sm">
-                                    <tbody>
-                                        @for (int j = 0; j < song.Releases.Count; j++)
-                                        {
-                                            var release = song.Releases[j];
-                                            var localJ = j;
+                            DisplayedSongs += 1; //a song has passed the filter criteria, display it
 
-                                            <tr>
-                                                <td>@release.Name</td>
-                                                <td width="25"><button class="btn btn-outline-success" @onclick="@(async () => await SetTag(local_index, localJ))">Tag</button></td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
+                            <tr @onclick="@(async () => await SetFilter(local_index))">
+                                <td>@song.Name</td>
+                                <td>@song.ArtistsNameString</td>
+                                <td>
+                                    <table class="table table-sm">
+                                        <tbody>
+                                            @for (int j = 0; j < song.Releases.Count; j++)
+                                            {
+                                                var release = song.Releases[j];
+                                                var localJ = j;
+
+                                                if (albumTypeFilters[release.ReleaseType]) //filter albums type release type
+                                                {
+                                                    <tr>
+                                                        <td>@($"{release.Name} <{release.Country}, {release.ReleaseTypeString}>")</td>
+                                                        <td width="25"><button class="btn btn-outline-success" @onclick="@(async () => await SetTag(local_index, localJ))">Tag</button></td>
+                                                    </tr>
+                                                }
+                                            }
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+
+                        }
                     }
                 }
             </tbody>
@@ -93,6 +116,9 @@
                     <th>Release Date</th>
                     <th>Country</th>
                     <th>Track Count</th>
+                    <th>Type</th>
+                    <th>Cover Art</th>
+                    <th>Options</th>
                 </tr>
             </thead>
             <tbody>
@@ -100,34 +126,34 @@
                 {
                     var release = songs[FilteredIndex].Releases[i];
                     var local_index = i; //needed or else onclick won't grab the correct index
-                    //release.GetCoverArt();
+                                         //release.GetCoverArt();
 
-                <tr>
-                    <td>@release.Name</td>
-                    <td>@release.Date</td>
-                    <td>@release.Country</td>
-                    <td>@release.TrackCount</td>
-                    @if (release.CoverArtLink == Release.CoverArtLinkNotFound)
-                    {
-                        <td></td>
-
-                    }
-                    else if (release.CoverArtLink == Release.CoverArtLinkDefault)
-                    {
-                        <td>
-                            <div class="spinner-border" role="status">
-                                <span class="sr-only">Loading...</span>
-                            </div>
-                        </td>
-                    }
-                    else
-                    {
-                        <td>
-                            <img src="@release.CoverArtLink" class="img-fluid" alt="Responsive image" width="100">
-                        </td>
-                    }
-                    <td width="25"><button class="btn btn-outline-success" @onclick="@(async () => await SetTag(FilteredIndex, local_index))">Tag</button></td>
-                </tr>
+                    <tr>
+                        <td>@release.Name</td>
+                        <td>@release.Date</td>
+                        <td>@release.Country</td>
+                        <td>@release.TrackCount</td>
+                        <td>@release.ReleaseTypeString</td>
+                        @if (release.CoverArtLink == Release.CoverArtLinkNotFound)
+                        {
+                            <td></td>
+                        }
+                        else if (release.CoverArtLink == Release.CoverArtLinkDefault)
+                        {
+                            <td>
+                                <div class="spinner-border" role="status">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                            </td>
+                        }
+                        else
+                        {
+                            <td>
+                                <img src="@release.CoverArtLink" class="img-fluid" alt="Responsive image" width="100">
+                            </td>
+                        }
+                        <td width="25"><button class="btn btn-outline-success" @onclick="@(async () => await SetTag(FilteredIndex, local_index))">Tag</button></td>
+                    </tr>
                 }
             </tbody>
         </table>
@@ -144,7 +170,25 @@
 
 
 
+
+
+
+
+
+
+
+
+
 @code {
+
+    public Dictionary<Release.ReleaseTypes, bool> albumTypeFilters = new Dictionary<Release.ReleaseTypes, bool>
+{
+        { Release.ReleaseTypes.Album, true },
+        { Release.ReleaseTypes.Compilation, false },
+        { Release.ReleaseTypes.Single, false },
+        { Release.ReleaseTypes.Live, false },
+        { Release.ReleaseTypes.Unknown, true },
+    };
 
     public string SearchQuery { get; set; } = "stuck like glue";
     public string ArtistFilter { get; set; } = "";
@@ -249,6 +293,8 @@
 
         return tmpSongs;
     }
+
+
     public bool FilterSongByArtist(Song song, string ArtistFilter)
     {
         if (ArtistFilter == "" || ArtistFilter == null)
@@ -284,5 +330,15 @@
         return false;
     }
 
+    public bool FilterSongByReleaseTypes(Song song, Dictionary<Release.ReleaseTypes, bool> albumTypeFilters)
+    {
+        foreach (Release release in song.Releases)
+        {
+            if (albumTypeFilters[release.ReleaseType])
+                return true;
+        }
+
+        return false;
+    }
 
 }

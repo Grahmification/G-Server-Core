@@ -150,6 +150,29 @@ namespace GServer.MusicDL
         public string Country { get; private set; } = "";
         public string TrackCount { get; private set; } = "";
         public string SongTrackNum { get; private set; } = ""; //only exists if release is under a song
+        public string ReleaseTypeString { get; private set; } = "Unkown"; //what type of release it is
+        public ReleaseTypes ReleaseType { get
+            {
+                switch (this.ReleaseTypeString)
+                {
+                    case "Album":
+                        return ReleaseTypes.Album;
+
+                    case "Compilation":
+                        return ReleaseTypes.Compilation;
+
+                    case "Single":
+                        return ReleaseTypes.Single;
+
+                    case "Live":
+                        return ReleaseTypes.Live;
+
+                    case "Unknown":
+                        return ReleaseTypes.Unknown;
+                }
+
+                return ReleaseTypes.Unknown; 
+            } }
 
         public string CoverArtLink { get; private set; } = CoverArtLinkDefault;
         public const string CoverArtLinkDefault = "Default";
@@ -165,12 +188,22 @@ namespace GServer.MusicDL
                 this.Country = releaseNode.GetChild("country").InnerText;
                 this.TrackCount = releaseNode.GetChild("medium-list").GetChild("track-count").InnerText;
                 this.SongTrackNum = releaseNode.GetChild("medium-list").GetChild("medium").GetChild("track-list").GetChild("track").GetChild("number").InnerText;
+
+                this.ReleaseTypeString = releaseNode.GetChild("release-group").GetAttributeVal("type");
+
+                if(this.ReleaseType == ReleaseTypes.Unknown) //handle all random strings that don't match
+                    this.ReleaseTypeString = "Unkown";
             }
         }
         public async Task GetCoverArt()
         {
             if (this.CoverArtLink == Release.CoverArtLinkDefault) //don't need to do it twice     
                 this.CoverArtLink = await MBServer.GetCoverArtDataFront(this.MBID);
+        }
+
+        public enum ReleaseTypes
+        {
+            Album, Compilation, Single, Live, Unknown
         }
     }
     public class ReleaseGroup : MBEntity
